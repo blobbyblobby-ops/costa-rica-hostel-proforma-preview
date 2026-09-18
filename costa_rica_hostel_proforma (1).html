@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Costa Rica Hostel Underwriting Desk — 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['IBM Plex Sans', 'sans-serif'],
+            mono: ['IBM Plex Mono', 'monospace'],
+          },
+          colors: {
+            ink: '#07131a',
+            panel: '#0c1c26',
+            line: '#1c3644',
+            gold: '#d4a373',
+            mint: '#2dd4a8',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #07131a; color: #e8eef2; }
+    .tab-on { color: #2dd4a8; border-bottom: 2px solid #2dd4a8; }
+    .tab-off { color: #8aa0ad; border-bottom: 2px solid transparent; }
+    input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input[type=number] { -moz-appearance: textfield; }
+    .field { background: #102530; border: 1px solid #1c3644; }
+    .field:focus { outline: none; border-color: #2dd4a8; box-shadow: 0 0 0 2px rgba(45,212,168,.15); }
+    table.data th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8aa0ad; font-weight: 600; }
+    table.data td { border-top: 1px solid #1c3644; }
+    .kpi { background: linear-gradient(180deg, #102530 0%, #0c1c26 100%); border: 1px solid #1c3644; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #2a4a5c; border-radius: 4px; }
+  </style>
+</head>
+<body class="font-sans antialiased min-h-screen">
+
+  <header class="border-b border-line bg-ink sticky top-0 z-30">
+    <div class="max-w-[1440px] mx-auto px-4 py-4 flex flex-wrap gap-3 items-end justify-between">
+      <div>
+        <p class="text-[11px] tracking-[0.18em] uppercase text-gold font-medium">Underwriting desk · not a solicitation</p>
+        <h1 class="text-xl sm:text-2xl font-semibold tracking-tight">Costa Rica Hostel Investment Model</h1>
+        <p class="text-sm text-slate-400 mt-1">2026 fact base · CRC 450 / USD assumed · territorial CIT · dual US–CR tax lens</p>
+      </div>
+      <div class="flex flex-wrap gap-2 text-xs">
+        <span class="px-2.5 py-1 rounded-full border border-line text-slate-300">As of 18 Sep 2026</span>
+        <span class="px-2.5 py-1 rounded-full border border-emerald-900/60 bg-emerald-950/40 text-mint">Colón strong ≈ ₡447–450</span>
+        <span class="px-2.5 py-1 rounded-full border border-line text-slate-300">IVA 13% · CIT 5–30% · WHT 15%</span>
+      </div>
+    </div>
+    <nav class="max-w-[1440px] mx-auto px-4 flex gap-5 overflow-x-auto text-sm">
+      <button class="tab-on pb-3 whitespace-nowrap" data-tab="model" onclick="showTab('model')">Live model</button>
+      <button class="tab-off pb-3 whitespace-nowrap" data-tab="years" onclick="showTab('years')">10-year proforma</button>
+      <button class="tab-off pb-3 whitespace-nowrap" data-tab="entity" onclick="showTab('entity')">Entities & tax</button>
+      <button class="tab-off pb-3 whitespace-nowrap" data-tab="regions" onclick="showTab('regions')">Regional markets</button>
+      <button class="tab-off pb-3 whitespace-nowrap" data-tab="labor" onclick="showTab('labor')">Labor & utilities</button>
+      <button class="tab-off pb-3 whitespace-nowrap" data-tab="swot" onclick="showTab('swot')">Competitive map</button>
+      <button class="tab-off pb-3 whitespace-nowrap" data-tab="audit" onclick="showTab('audit')">Fact audit</button>
+    </nav>
+  </header>
+
+  <main class="max-w-[1440px] mx-auto px-4 py-6">
+
+    <!-- ===================== MODEL ===================== -->
+    <section id="tab-model" class="tabpane">
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <aside class="xl:col-span-4 space-y-4">
+          <div class="kpi rounded-xl p-4 space-y-3">
+            <h2 class="text-sm font-semibold text-mint">Scenario controls</h2>
+            <label class="block text-xs text-slate-400">Region preset
+              <select id="region" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" onchange="applyRegion()"></select>
+            </label>
+            <label class="block text-xs text-slate-400">Legal wrapper
+              <select id="entity" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" onchange="recalc()">
+                <option value="srl">CR S.R.L. owned by US person (default)</option>
+                <option value="sa">CR S.A. owned by US person</option>
+                <option value="pf">Persona física / sole owner (no corp)</option>
+                <option value="usllc">US LLC → CR S.R.L.</option>
+                <option value="usccorp">US C-Corp → CR S.R.L.</option>
+                <option value="asoc">CR Asociación / faith-based</option>
+              </select>
+            </label>
+            <label class="block text-xs text-slate-400">Occupancy path
+              <select id="occPath" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" onchange="recalc()">
+                <option value="steady">Steady annual average</option>
+                <option value="seasonal">Seasonal (dry / green / shoulder)</option>
+              </select>
+            </label>
+            <label class="flex items-center gap-2 text-sm text-slate-300">
+              <input type="checkbox" id="upsellsOn" checked onchange="recalc()" class="accent-emerald-400">
+              Include F&B, laundry, tours
+            </label>
+          </div>
+
+          <div class="kpi rounded-xl p-4 space-y-3">
+            <h2 class="text-sm font-semibold">Inventory</h2>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-xs text-slate-400">Dorm beds
+                <input id="dormBeds" type="number" value="48" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Private rooms
+                <input id="privRooms" type="number" value="12" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Pax / private
+                <input id="paxPriv" type="number" value="2" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Annual occ %
+                <input id="occ" type="number" value="58" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+            </div>
+            <p class="text-[11px] text-slate-500">Reference property (Costa Rica Backpackers, Av. 6 / C. 21–23) is a mixed dorm + private house with restaurant, bar, pool, fans not AC, tour desk. Aggregators disagree on room count; HostelsClub lists 15 privates + 19 dorm rooms. Default here is a 48-bed / 12-private replica, not a 70-identical-bed warehouse.</p>
+          </div>
+
+          <div class="kpi rounded-xl p-4 space-y-3">
+            <h2 class="text-sm font-semibold">Nightly ADR (USD, pre-IVA)</h2>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-xs text-slate-400">Dorm ADR
+                <input id="dormAdr" type="number" value="16" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Private ADR
+                <input id="privAdr" type="number" value="55" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">OTA mix %
+                <input id="otaMix" type="number" value="62" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">OTA commission %
+                <input id="otaFee" type="number" value="16" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+            </div>
+          </div>
+
+          <div class="kpi rounded-xl p-4 space-y-3">
+            <h2 class="text-sm font-semibold">Ancillary attach (per occupied guest-night)</h2>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-xs text-slate-400">F&B spend $
+                <input id="fb" type="number" value="14" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">F&B COGS %
+                <input id="fbCogs" type="number" value="34" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Laundry attach $
+                <input id="laundry" type="number" value="1.2" step="0.1" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Tour net commission $
+                <input id="tours" type="number" value="3.5" step="0.1" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+            </div>
+            <p class="text-[11px] text-slate-500">Tour line is net commission (typical 10–20% of a $40–120 activity), not gross ticket sales. F&B is net of free coffee / included breakfast leakage.</p>
+          </div>
+
+          <div class="kpi rounded-xl p-4 space-y-3">
+            <h2 class="text-sm font-semibold">Occupancy cost & labor</h2>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-xs text-slate-400">Monthly rent / debt $
+                <input id="rent" type="number" value="4200" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Utilities / mo $
+                <input id="utils" type="number" value="1400" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Staff FTE
+                <input id="fte" type="number" value="8" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Avg loaded $/FTE/mo
+                <input id="loaded" type="number" value="1450" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Insurance / mo $
+                <input id="ins" type="number" value="280" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+              <label class="text-xs text-slate-400">Maint + supplies / mo $
+                <input id="maint" type="number" value="900" class="field mt-1 w-full rounded-md px-3 py-2 text-sm" oninput="recalc()">
+              </label>
+            </div>
+            <p class="text-[11px] text-slate-500">Loaded wage = base + 26.83% employer cargas (2026) + aguinaldo 8.33% + vacation accrual. INS property + RC is typically hundreds/month, not $900, unless you are insuring a large coastal building at replacement cost.</p>
+          </div>
+        </aside>
+
+        <div class="xl:col-span-8 space-y-4">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="kpi rounded-xl p-4">
+              <p class="text-[11px] uppercase tracking-wide text-slate-500">Gross operating revenue</p>
+              <p id="k-rev" class="text-2xl font-semibold mt-1 font-mono">$0</p>
+              <p id="k-revn" class="text-xs text-slate-500 mt-1"></p>
+            </div>
+            <div class="kpi rounded-xl p-4">
+              <div class="text-[11px] uppercase tracking-wide text-slate-500">Cash OpEx (ex-tax)</div>
+              <p id="k-opex" class="text-2xl font-semibold mt-1 font-mono">$0</p>
+              <p id="k-opexn" class="text-xs text-slate-500 mt-1"></p>
+            </div>
+            <div class="kpi rounded-xl p-4">
+              <p class="text-[11px] uppercase tracking-wide text-slate-500">EBITDA</p>
+              <p id="k-ebitda" class="text-2xl font-semibold mt-1 font-mono">$0</p>
+              <p id="k-margin" class="text-xs text-slate-500 mt-1"></p>
+            </div>
+            <div class="kpi rounded-xl p-4">
+              <p class="text-[11px] uppercase tracking-wide text-slate-500">Owner cash after CR tax</p>
+              <p id="k-cash" class="text-2xl font-semibold mt-1 font-mono">$0</p>
+              <p id="k-cashn" class="text-xs text-slate-500 mt-1"></p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="kpi rounded-xl p-4">
+              <p class="text-[11px] uppercase text-slate-500">Break-even occupancy</p>
+              <p id="k-be" class="text-xl font-mono font-semibold mt-1">—</p>
+              <p class="text-xs text-slate-500 mt-1">Holds rates, staff, rent fixed</p>
+            </div>
+            <div class="kpi rounded-xl p-4">
+              <p class="text-[11px] uppercase text-slate-500">Rev / available bed-eq</p>
+              <p id="k-revpar" class="text-xl font-mono font-semibold mt-1">—</p>
+              <p class="text-xs text-slate-500 mt-1">Private room = 2 bed-eq</p>
+            </div>
+            <div class="kpi rounded-xl p-4">
+              <p class="text-[11px] uppercase text-slate-500">IVA collected (not yours)</p>
+              <p id="k-iva" class="text-xl font-mono font-semibold mt-1">—</p>
+              <p class="text-xs text-slate-500 mt-1">13% on lodging + F&B + laundry</p>
+            </div>
+          </div>
+
+          <div class="kpi rounded-xl p-4 h-[340px] relative">
+            <h3 class="text-sm font-semibold mb-2">Annual stack (USD)</h3>
+            <div class="absolute inset-0 pt-12 pb-4 px-4"><canvas id="stackChart"></canvas></div>
+          </div>
+
+          <div class="kpi rounded-xl p-4 overflow-x-auto">
+            <h3 class="text-sm font-semibold mb-3">Year-1 P&amp;L</h3>
+            <table class="data w-full text-sm">
+              <thead><tr><th class="text-left py-2">Line</th><th class="text-right">Beds-only</th><th class="text-right">With ancillaries</th></tr></thead>
+              <tbody id="plBody"></tbody>
+            </table>
+          </div>
+
+          <div class="kpi rounded-xl p-4">
+            <h3 class="text-sm font-semibold mb-2">Sensitivity — EBITDA ($)</h3>
+            <p class="text-xs text-slate-500 mb-3">Rows = occupancy. Columns = dorm ADR. Privates, staff, and rent held at current inputs.</p>
+            <div class="overflow-x-auto"><table class="data w-full text-sm" id="sensTable"></table></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 10 YEAR ===================== -->
+    <section id="tab-years" class="tabpane hidden space-y-4">
+      <div class="kpi rounded-xl p-4">
+        <h2 class="text-lg font-semibold">Ten-year path</h2>
+        <p class="text-sm text-slate-400 mt-1">Ramp occupancy +4pp in Y2 and +3pp in Y3 (capped at regional ceiling). ADR +3%/yr. Loaded wages +2.2%/yr (aligned with recent CNS increments, not US CPI). Utilities +3%. Rent steps +3% annually on a lease; if you buy, swap rent for debt service + 0.25% property tax + capex reserve. Figures are pre-US tax.</p>
+      </div>
+      <div class="kpi rounded-xl p-4 h-[360px] relative">
+        <div class="absolute inset-0 p-4 pt-6"><canvas id="yearChart"></canvas></div>
+      </div>
+      <div class="kpi rounded-xl p-4 overflow-x-auto">
+        <table class="data w-full text-sm" id="yearTable"></table>
+      </div>
+    </section>
+
+    <!-- ===================== ENTITY ===================== -->
+    <section id="tab-entity" class="tabpane hidden space-y-5">
+      <div class="kpi rounded-xl p-5 space-y-3">
+        <h2 class="text-lg font-semibold">What actually changes by wrapper</h2>
+        <p class="text-sm text-slate-300 leading-relaxed">Costa Rica taxes <em>source</em>, not citizenship. A hostel in San José or Tamarindo produces Costa Rican-source income regardless of whether the owner lives in Easton, PA or Escazú. The United States taxes its citizens on worldwide income and has <strong>no income-tax treaty</strong> with Costa Rica. That combination — not the hostel’s bunk count — drives most of the entity decision.</p>
+      </div>
+      <div class="overflow-x-auto kpi rounded-xl p-4">
+        <table class="data w-full text-sm">
+          <thead>
+            <tr>
+              <th class="text-left py-2 pr-3">Topic</th>
+              <th class="text-left pr-3">US person, no CR company</th>
+              <th class="text-left pr-3">CR S.R.L. (preferred local form)</th>
+              <th class="text-left pr-3">CR S.A.</th>
+              <th class="text-left pr-3">US LLC owns CR S.R.L.</th>
+              <th class="text-left pr-3">US C-Corp owns CR S.R.L.</th>
+              <th class="text-left">Asociación / FBO</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-300 align-top">
+            <tr>
+              <td class="py-3 font-medium text-white">Formation</td>
+              <td>Cédula jurídica not required. Still need patente, Ministerio de Salud, ICT lodging registration, Caja if you hire.</td>
+              <td>One or more quotas. Manager (gerente), not a 3-person board. Cheap, standard for expats.</td>
+              <td>Board of directors + fiscal. Heavier minutes. Same tax as S.R.L.</td>
+              <td>Two-stack compliance. CR formation + US LLC + Form 5471 / 8865 depending on classification.</td>
+              <td>Same stack plus C-Corp 1120.</td>
+              <td>Asociación civil typically needs multiple founders (practice is ~10). Purpose must be non-profit.</td>
+            </tr>
+            <tr>
+              <td class="py-3 font-medium text-white">Can the American work the desk?</td>
+              <td colspan="5">Ownership ≠ work authorization. Tourist status does not allow local labor. Inversionista ($150k qualifying investment, often titled in personal name) lets you live and manage your investment; it does not let you take a third-party CR job. Pensionado / rentista are similarly restricted. A separate work category or permanent residency is required to be on payroll as an ordinary employee.</td>
+              <td>Same immigration wall. A “ministry” label does not create a work permit.</td>
+            </tr>
+            <tr>
+              <td class="py-3 font-medium text-white">CR income tax</td>
+              <td>Persona física brackets 0–25% on CR-source net. 2026 self-employed bands start exempt to ₡4.094m then 10 / 15 / 20 / 25%.</td>
+              <td colspan="2">Standard CIT 30% once the company is not in the SME gross-income window. SME scale on <em>net</em> is 5 / 10 / 15 / 20% only if annual <em>gross</em> stays under the small-company ceiling (~₡119m in recent PwC tables; confirm each decree). Most 60-bed hostels with F&B will leave the SME window quickly.</td>
+              <td>CR sub pays CR CIT. Distributions face 15% WHT (5% only for locally listed shares — irrelevant here).</td>
+              <td>Same CR layer.</td>
+              <td>0% on exempt purpose income <em>if</em> Hacienda accepts public-utility / non-lucrative status. A hostel that sells beds, beer and tours is a commercial activity. Expect CIT + IVA like everyone else unless counsel gets a rare ruling.</td>
+            </tr>
+            <tr>
+              <td class="py-3 font-medium text-white">IVA 13%</td>
+              <td colspan="6">Lodging under 30 days, restaurant, bar, laundry, tours sold in-house: 13%. You collect it, you remittance it. It is not revenue. Long-term stays ≥30 days can be exempt. Platforms are being pulled into withholding (Airbnb 12.75% of payout flagged for late-2026; Booking/Expedia already in the digital-services net for CR cards).</td>
+            </tr>
+            <tr>
+              <td class="py-3 font-medium text-white">Other CR frictions</td>
+              <td colspan="5">Municipal patente (often a % of gross or a tariff schedule, paid quarterly). Property tax 0.25% of municipal appraisal if you own. Transfer tax 1.5% on purchase. Annual Law 9428 company tax even on idle sociedades. ICT registration for tourist lodging. Guest book for Migración. Liquor patente if you run a real bar.</td>
+              <td>Same commercial permits if you charge guests.</td>
+            </tr>
+            <tr>
+              <td class="py-3 font-medium text-white">US federal</td>
+              <td>Schedule C if disregarded. FEIE (Form 2555) covers <em>earned</em> income for personal services abroad, 2026 cap $132,900, plus housing. If capital is a material income-producing factor, IRS limits earned income to 30% of net profit. Pure rental / dividend character is not FEIE. SE tax can apply on earned portion.</td>
+              <td>Default corporation for CR law. IRS may treat S.R.L. as a corp (Form 5471, GILTI if CFC) unless a check-the-box election made it a disregarded entity or partnership when eligible. Dividends are not FEIE. FTC for CR CIT + WHT.</td>
+              <td>Almost always a foreign corporation. CFC / GILTI analysis if US persons own &gt;50%.</td>
+              <td>US LLC is usually a pass-through. Adds FBAR, 8938, and the same 5471 on the CR sub. Does not erase GILTI.</td>
+              <td>Classic double tax: CR CIT + 15% WHT + US 21% on residual with FTC haircuts.</td>
+              <td>US 501(c)(3) is a separate determination. A CR asociación is not automatically a US charity. Deductible donations need equivalency or further IRS work.</td>
+            </tr>
+            <tr>
+              <td class="py-3 font-medium text-white">When this is rational</td>
+              <td>Tiny operation, owner on site with residency, wants simplicity.</td>
+              <td>Default for a real hostel. Liability box + local banking + payroll.</td>
+              <td>Only if investors demand S.A. form.</td>
+              <td>US partners, US banking, or estate planning. Costly paperwork.</td>
+              <td>Rarely for a single hostel.</td>
+              <td>Only if the project is actually a mission with restricted surplus — not a yield vehicle.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="kpi rounded-xl p-5">
+          <h3 class="font-semibold text-mint">Incentives that are real</h3>
+          <ul class="mt-3 space-y-2 text-sm text-slate-300 list-disc pl-5">
+            <li>Law 6990 (Incentivos para el Desarrollo Turístico) can waive import duties on FF&E and grant other relief <em>after</em> an ICT Declaratoria Turística / contrato turístico. That is a hotel-grade filing, not a weekend patent.</li>
+            <li>Law 9996 investor / retiree package: $150k qualifying investment can support inversionista residency; household-goods / vehicle import relief has been time-limited (verify current decree — the 2026 window has been discussed through mid-year).</li>
+            <li>MEIC micro/small CIT holidays exist for registered PYMEs (0% years 1–3, then partial). A capitalized tourist lodging business often fails the spirit or the size test.</li>
+            <li>Hiring locals is not optionally “incentivized”; it is mandatory if you want legal labor. Caja inscription is the price of a work force.</li>
+          </ul>
+        </div>
+        <div class="kpi rounded-xl p-5">
+          <h3 class="font-semibold text-gold">Incentives that get oversold</h3>
+          <ul class="mt-3 space-y-2 text-sm text-slate-300 list-disc pl-5">
+            <li>There is no automatic income-tax holiday for “bringing tourism.” Free-zone / Ley 7210 is for exporters and qualified service companies, not a Barrio California bunkhouse.</li>
+            <li>Faith-based or nonprofit clothing does not zero-out IVA or let you skip Caja.</li>
+            <li>US FEIE is not a 100% shield on hostel profit. Capital in the building caps the earned slice; distributions from a sociedad are dividends.</li>
+            <li>Foreigners already may title ordinary (non-maritime-zone) real estate in their own name. A company is optional for ownership, useful for liability and banking.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== REGIONS ===================== -->
+    <section id="tab-regions" class="tabpane hidden space-y-4">
+      <div class="kpi rounded-xl p-5">
+        <h2 class="text-lg font-semibold">How the country actually segments</h2>
+        <p class="text-sm text-slate-400 mt-2">Hotel chamber peak-season surveys (CCH, Dec 2025 for YE25/YE26) are <em>not</em> annual hostel occupancy. They do show the map: Northern Plains 92% projected peak, Guanacaste 88%, Central Valley city 60–68%, South Pacific ~70%. Airbnb-style inventory roughly doubled since 2019 and prints national occupancy in the low-to-mid 30s to mid-40s depending on the dataset — that is the competitive floor under private rooms. Hostel dorms still clear better than lonely Airbnbs because of social demand, but they are not immune to oversupply in Tamarindo / Jaco / Puerto Viejo.</p>
+      </div>
+      <div id="regionGrid" class="grid md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- ===================== LABOR ===================== -->
+    <section id="tab-labor" class="tabpane hidden space-y-4">
+      <div class="kpi rounded-xl p-5">
+        <h2 class="text-lg font-semibold">2026 labor load — the part Gemini flattened</h2>
+        <p class="text-sm text-slate-300 mt-2">Employer social charges rose on 1 Jan 2026 because IVM went from 5.42% to 5.58%. Headline employer package is <strong>26.83%</strong> if you include INA (1.50%, skipped under 5 workers), FODESAF 5%, IMAS 0.50%, Banco Popular slices, FCL 1.50%, complementary pension 2.00%, and ~1% INS riesgos del trabajo (activity-rated). That 26.83% is <em>not</em> the fully loaded cost. Aguinaldo is a 13th month (8.33% of base, paid 1–20 December). Vacaciones are two weeks after 50 weeks. Many operators also reserve cesantía. A working planning factor is <strong>base × 1.38 to 1.45</strong>.</p>
+      </div>
+      <div class="overflow-x-auto kpi rounded-xl p-4">
+        <table class="data w-full text-sm">
+          <thead>
+            <tr>
+              <th class="text-left py-2">2026 category (Decreto 45303-MTSS)</th>
+              <th class="text-right">Monthly min ₡</th>
+              <th class="text-right">≈ USD @ 450</th>
+              <th class="text-right">+26.83%</th>
+              <th class="text-right">+ aguinaldo</th>
+              <th class="text-right">Planning loaded</th>
+              <th class="text-left pl-4">Hostel role</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-300">
+            <tr><td class="py-2">No calificado</td><td class="text-right font-mono">373,092</td><td class="text-right font-mono">829</td><td class="text-right font-mono">1,052</td><td class="text-right font-mono">1,121</td><td class="text-right font-mono text-mint">1,160–1,200</td><td class="pl-4">Housekeeping, stewarding</td></tr>
+            <tr><td class="py-2">Semicalificado</td><td class="text-right font-mono">405,711</td><td class="text-right font-mono">902</td><td class="text-right font-mono">1,144</td><td class="text-right font-mono">1,219</td><td class="text-right font-mono text-mint">1,260–1,320</td><td class="pl-4">Night audit, laundry lead</td></tr>
+            <tr><td class="py-2">Calificado</td><td class="text-right font-mono">419,756</td><td class="text-right font-mono">933</td><td class="text-right font-mono">1,183</td><td class="text-right font-mono">1,261</td><td class="text-right font-mono text-mint">1,310–1,380</td><td class="pl-4">Line cook, receptionist</td></tr>
+            <tr><td class="py-2">Especializado</td><td class="text-right font-mono">487,335</td><td class="text-right font-mono">1,083</td><td class="text-right font-mono">1,374</td><td class="text-right font-mono">1,464</td><td class="text-right font-mono text-mint">1,520–1,650</td><td class="pl-4">Bilingual guest-facing lead</td></tr>
+            <tr><td class="py-2">Bachiller universitario</td><td class="text-right font-mono">664,078</td><td class="text-right font-mono">1,476</td><td class="text-right font-mono">1,872</td><td class="text-right font-mono">1,995</td><td class="text-right font-mono text-mint">2,050–2,400</td><td class="pl-4">Assistant manager</td></tr>
+            <tr><td class="py-2">Market GM (not a min-wage job)</td><td class="text-right font-mono">—</td><td class="text-right font-mono">1,800–2,800</td><td class="text-right font-mono">—</td><td class="text-right font-mono">—</td><td class="text-right font-mono text-mint">2,500–3,900</td><td class="pl-4">General manager, English + P&L</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="kpi rounded-xl p-5">
+          <h3 class="font-semibold">Utilities — ranges, not a single cell</h3>
+          <p class="text-sm text-slate-400 mt-2">Costa Rica posted some of the highest commercial power prices in Latin America in 2025 (~$0.26/kWh business). ARESEP cut 2026 generation/distribution tariffs (ICE distribution on the order of −15%). A fan-only San José house and a 24/7 AC Tamarindo poshtel are different species.</p>
+          <table class="data w-full text-sm mt-3">
+            <thead><tr><th class="text-left py-2">Item</th><th>Low</th><th>Median</th><th>High</th></tr></thead>
+            <tbody class="text-slate-300">
+              <tr><td class="py-2">Power (ICE/CNFL/Coope)</td><td>$500</td><td>$1,400</td><td>$4,500</td></tr>
+              <tr><td class="py-2">AyA / rural water + sewer</td><td>$200</td><td>$550</td><td>$1,200</td></tr>
+              <tr><td class="py-2">Fiber + backup SIM</td><td>$80</td><td>$160</td><td>$350</td></tr>
+              <tr><td class="py-2">LP gas (kitchen)</td><td>$80</td><td>$180</td><td>$400</td></tr>
+              <tr><td class="py-2">Garbage / municipal</td><td>$30</td><td>$70</td><td>$150</td></tr>
+              <tr><td class="py-2">Property + RC insurance</td><td>$120</td><td>$280</td><td>$700</td></tr>
+            </tbody>
+          </table>
+          <p class="text-xs text-slate-500 mt-2">Monthly USD. High column assumes coastal AC + commercial kitchen + poor insulation. Off-grid Osa adds diesel / solar capex that does not show as a pretty utility bill.</p>
+        </div>
+        <div class="kpi rounded-xl p-5">
+          <h3 class="font-semibold">A realistic 8-person roster</h3>
+          <table class="data w-full text-sm mt-3">
+            <thead><tr><th class="text-left py-2">Seat</th><th>FTE</th><th>Loaded $/mo</th></tr></thead>
+            <tbody class="text-slate-300">
+              <tr><td class="py-2">General manager</td><td>1</td><td class="font-mono">2,800</td></tr>
+              <tr><td class="py-2">Reception / night (rotating)</td><td>2.5</td><td class="font-mono">1,350</td></tr>
+              <tr><td class="py-2">Housekeeping</td><td>2</td><td class="font-mono">1,180</td></tr>
+              <tr><td class="py-2">Chef / kitchen lead</td><td>1</td><td class="font-mono">1,650</td></tr>
+              <tr><td class="py-2">Steward / bar</td><td>1.5</td><td class="font-mono">1,220</td></tr>
+            </tbody>
+          </table>
+          <p class="text-sm text-slate-300 mt-3">Blended loaded ≈ $1,450 × 8 = <span class="font-mono text-mint">$11,600 / month</span> or $139k / year before overtime on Semana Santa and Christmas. Skip the chef and you cut ~$20k and most of the F&B margin that pays for the chef.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SWOT ===================== -->
+    <section id="tab-swot" class="tabpane hidden space-y-4">
+      <div id="swotGrid" class="grid md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- ===================== AUDIT ===================== -->
+    <section id="tab-audit" class="tabpane hidden space-y-4">
+      <div class="kpi rounded-xl p-5">
+        <h2 class="text-lg font-semibold">Fact audit of the prior model & the Gemini memo</h2>
+        <p class="text-sm text-slate-400 mt-2">Directionally Gemini was right about one thing: at $13 bunks, labor + occupancy cost can eat the room. The supporting numbers were rounded folklore. This desk replaces them with 2026 public sources and says where the tape is thin.</p>
+      </div>
+      <div class="overflow-x-auto kpi rounded-xl p-4">
+        <table class="data w-full text-sm">
+          <thead>
+            <tr>
+              <th class="text-left py-2">Claim</th>
+              <th class="text-left">Prior take</th>
+              <th class="text-left">Corrected 2026 position</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-300 align-top">
+            <tr>
+              <td class="py-3 text-white font-medium">Reference hostel size</td>
+              <td>User memory “~70 people.” Gemini modeled 70 identical dorm beds at $13.</td>
+              <td>Costa Rica Backpackers is a mixed-inventory house: 4/6/8-bed dorms plus privates, restaurant, bar, pool, garden, fans not AC, tour desk, breakfast ~$6, coworking $5. HostelsClub: 15 private rooms + 19 dorm rooms. Public room-count scrapers that say “95 bedrooms” are junk. Model a mixed stack.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">Dorm ADR</td>
+              <td>$13 blending up to $18 by Y10. SJ “median $15.”</td>
+              <td>2026 backpacker guides put major-destination dorms around $14–32. SJ floor still exists near $10–15 on OTAs in soft weeks; Tamarindo/Jaco/Santa Teresa print $18–40. Selina-class product is a different ADR family. Use regional presets, not one national median.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">Occupancy 65% ±15pp as a law of nature</td>
+              <td>Bell curve presented as property physics.</td>
+              <td>CCH peak survey YE25/26: national hotel 77% projected, Valle Central city ~60–68%, Guanacaste 88%. That is high season hotels, not annual hostels. Short-let occupancy nationally is much worse (high-20s to mid-40s) because listings doubled. A well-run SJ transit hostel can do mid-50s to mid-60s annual; a beach poshtel can beat that in dry months and fall into the 30s in October. Seasonality is the model, not a single σ.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">Employer Caja “~26.5%”</td>
+              <td>Used as the full labor burden.</td>
+              <td>2026 employer package 26.83% (IVM +0.16pp). Add aguinaldo 8.33% and vacation and you plan 38–45% on base. Gemini’s $720 cleaner is below the 2026 unskilled minimum (₡373,092 ≈ $829 at 450).</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">Corporate tax “5–30%”</td>
+              <td>Quoted as if every hostel picks a rate from a menu.</td>
+              <td>30% is the ordinary CIT. 5/10/15/20% is an SME scale gated by annual gross. Dividend WHT to a non-resident owner is 15% (5% listed-share exception). Law 9428 annual company tax is extra.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">US FEIE on “the hostel”</td>
+              <td>Implied the profit lands in the exclusion.</td>
+              <td>FEIE 2026 cap $132,900 is for foreign <em>earned</em> income. Dividends from an S.R.L. are not earned. If capital is material, IRS caps the earned slice at 30% of net. No US–CR income tax treaty. FTC is the tool for CIT/WHT. FBAR / 8938 / 5471 still exist.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">Nonprofit = 0%</td>
+              <td>Table cell said 0% if “public utility.”</td>
+              <td>Utilidad pública is a political/administrative grant, not a checkbox. IVA still hits commercial guest charges. Hacienda audits mixed-purpose associations. Do not underwrite a yield hostel as a church.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">IVA</td>
+              <td>Missing from both the HTML app and the Gemini P&amp;L.</td>
+              <td>13% on short-stay lodging, F&B, most extras. Collect and remit. Platforms are being deputized as withhold agents.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">OTA 15% of total revenue</td>
+              <td>Applied to F&B too.</td>
+              <td>Commission is on the booked room (and sometimes packages). Bar tabs and laundry at the desk are not Hostelworld’s. Use an OTA mix on room revenue only.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">Insurance $200–900 / month as “utils”</td>
+              <td>Lumped into a wide band with water.</td>
+              <td>INS hogar-style quotes on a $600k house can be ~$1.6k/year. Commercial RC + fire on a hostel is higher than a house but Gemini’s high monthly print looks like replacement-cost coastal luxury, not a SJ fan house.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">$72k rent as destiny</td>
+              <td>Hard-coded in both scenarios.</td>
+              <td>Hotel listings median asking ~$1.35m nationally; commercial median asking ~$799k — means are higher. SJ apartments ~$2,000–3,000/m². Tamarindo median asking on tracked inventory is luxury-tilted (~$690k). Foreigners rarely get cheap long amortizing CRC mortgages. Underwrite lease vs purchase as two models.</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">FX</td>
+              <td>Silent.</td>
+              <td>September 2026 colón around ₡447, strongest since 2007 records. You collect dollars and pay wages in colones — until you don’t. A strong colón compresses USD margins even when arrivals are up (ICT: 2.19m arrivals Jan–Aug 2026, +5.3% vs 2025, with a soft August US print).</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-white font-medium">Law 6990 as a free lunch</td>
+              <td>Mentioned as property-tax holidays and duty-free FF&E.</td>
+              <td>Real statute. Real ICT process. Not automatic for a 48-bed hostel that looks like a converted house. Model zero incentive until a lawyer and an architect have a filing plan.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-500 pb-8">This page is an analytical workbook, not legal, tax, immigration, or investment advice. Decree numbers, CRC bands, and ICT practice move. Pull Hacienda, MTSS, CCSS, ARESEP, and counsel before you wire a deposit.</p>
+    </section>
+  </main>
+
+<script>
+const FX = 450;
+const usd = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n||0);
+const usd1 = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:1}).format(n||0);
+const pct = n => (n*100).toFixed(1) + '%';
+
+const REGIONS = {
+  sj: {
+    name: 'San José / Alajuela transit',
+    blurb: '1–2 night airport sandwich. Tight ADR curve, low AC load, volume over nightlife. City hotel peak surveys sit near 60–68%.',
+    dormAdr: 16, privAdr: 52, occ: 58, occCap: 72,
+    fb: 11, laundry: 1.0, tours: 2.2, utils: 1100, rent: 3800, loaded: 1400,
+    stats: [
+      ['Dorm ADR','$12','$16','$22'],
+      ['Private ADR','$35','$52','$80'],
+      ['Annual occ','42%','58%','72%'],
+      ['Stay length','1 night','1.6','3'],
+      ['Power / mo','$500','$1,100','$2,000'],
+      ['F&B / guest-night','$5','$11','$22']
+    ],
+    note: 'Profit is utilization and tour-desk attach on a short stay. Ceiling fans work. Neighborhood risk and noise complaints are the operating art.'
+  },
+  liberia: {
+    name: 'Liberia / airport Guanacaste',
+    blurb: 'Second international gate. More one-night stays than Tamarindo, cheaper real estate than the beach strip.',
+    dormAdr: 17, privAdr: 58, occ: 60, occCap: 78,
+    fb: 12, laundry: 1.1, tours: 2.8, utils: 1300, rent: 3200, loaded: 1380,
+    stats: [
+      ['Dorm ADR','$13','$17','$26'],
+      ['Private ADR','$40','$58','$95'],
+      ['Annual occ','45%','60%','78%'],
+      ['Stay length','1 night','1.8','4'],
+      ['Power / mo','$600','$1,300','$2,400'],
+      ['F&B / guest-night','$6','$12','$24']
+    ],
+    note: 'Good lease deals still exist away from Tamarindo pricing. You are a logistics node, not a destination brand, unless you add a pool and a shuttle story.'
+  },
+  tama: {
+    name: 'Tamarindo / Langosta / Coco surf-party',
+    blurb: 'Longer stays, bar economics, mandatory AC in anything that wants $25+ dorms. Dry-season crush, October hole.',
+    dormAdr: 26, privAdr: 95, occ: 62, occCap: 88,
+    fb: 28, laundry: 1.8, tours: 4.5, utils: 2800, rent: 7500, loaded: 1550,
+    stats: [
+      ['Dorm ADR','$18','$26','$40'],
+      ['Private ADR','$65','$95','$160'],
+      ['Annual occ','38%','62%','88%'],
+      ['Stay length','2 nights','3.5','10'],
+      ['Power / mo','$1,500','$2,800','$5,000'],
+      ['F&B / guest-night','$15','$28','$55']
+    ],
+    note: 'Highest revenue ceiling and highest rent. Selina-class supply and doubled short-let stock cap occupancy. Liquor patente and neighbor politics are live risks.'
+  },
+  jaco: {
+    name: 'Jacó / Pacífico Central',
+    blurb: 'Closest surf town to SJ. Weekend Tico demand plus backpacker flow. Slightly less precious than Tamarindo, still AC-heavy.',
+    dormAdr: 22, privAdr: 80, occ: 60, occCap: 84,
+    fb: 22, laundry: 1.5, tours: 3.2, utils: 2400, rent: 5500, loaded: 1480,
+    stats: [
+      ['Dorm ADR','$16','$22','$36'],
+      ['Private ADR','$55','$80','$140'],
+      ['Annual occ','40%','60%','84%'],
+      ['Stay length','2 nights','3.0','8'],
+      ['Power / mo','$1,200','$2,400','$4,200'],
+      ['F&B / guest-night','$12','$22','$45']
+    ],
+    note: 'CCH Pacífico Central peak projection ~73%. Party reputation is a feature and a staffing problem.'
+  },
+  arena: {
+    name: 'La Fortuna / Arenal',
+    blurb: 'Adventure desk is the business. Cooler nights, lower AC. Commission on $80–150 tickets dwarfs a $18 bunk.',
+    dormAdr: 20, privAdr: 72, occ: 64, occCap: 90,
+    fb: 16, laundry: 1.2, tours: 8.5, utils: 1000, rent: 4000, loaded: 1450,
+    stats: [
+      ['Dorm ADR','$15','$20','$32'],
+      ['Private ADR','$48','$72','$120'],
+      ['Annual occ','48%','64%','90%'],
+      ['Stay length','2 nights','2.8','6'],
+      ['Power / mo','$500','$1,000','$1,800'],
+      ['Tour net / guest-night','$3','$8.50','$18']
+    ],
+    note: 'Northern Plains led CCH peak occupancy (92% in the YE25 survey). Roads and weather still create red-week tails.'
+  },
+  monte: {
+    name: 'Monteverde cloud forest',
+    blurb: 'Same commission logic as Arenal, worse access, colder, mold is a line item.',
+    dormAdr: 19, privAdr: 68, occ: 60, occCap: 86,
+    fb: 15, laundry: 1.1, tours: 7.0, utils: 900, rent: 3600, loaded: 1420,
+    stats: [
+      ['Dorm ADR','$14','$19','$30'],
+      ['Private ADR','$45','$68','$110'],
+      ['Annual occ','44%','60%','86%'],
+      ['Stay length','2 nights','2.5','5'],
+      ['Power / mo','$450','$900','$1,600'],
+      ['Tour net / guest-night','$2.50','$7','$16']
+    ],
+    note: 'Green-season access is the occupancy killer. Staff housing in Santa Elena is part of the real wage.'
+  },
+  caribe: {
+    name: 'Puerto Viejo / Cahuita',
+    blurb: 'Lower ADR than Guanacaste, distinct demand, Afro-Caribbean labor market, rain on a different calendar.',
+    dormAdr: 18, privAdr: 60, occ: 58, occCap: 82,
+    fb: 14, laundry: 1.0, tours: 4.0, utils: 1500, rent: 2800, loaded: 1320,
+    stats: [
+      ['Dorm ADR','$13','$18','$28'],
+      ['Private ADR','$40','$60','$110'],
+      ['Annual occ','40%','58%','82%'],
+      ['Stay length','2 nights','3.2','9'],
+      ['Power / mo','$700','$1,500','$2,800'],
+      ['F&B / guest-night','$8','$14','$30']
+    ],
+    note: 'Lease basis can look cheap until you price security, humidity capex, and irregular logistics.'
+  },
+  osa: {
+    name: 'Osa / Drake / Puerto Jiménez',
+    blurb: 'Captive F&B, ugly logistics, high ADR because there is no next restaurant. Not a 70-bed idea.',
+    dormAdr: 32, privAdr: 120, occ: 52, occCap: 78,
+    fb: 42, laundry: 2.0, tours: 12, utils: 1800, rent: 2500, loaded: 1600,
+    stats: [
+      ['Dorm ADR','$22','$32','$50'],
+      ['Private ADR','$80','$120','$250'],
+      ['Annual occ','32%','52%','78%'],
+      ['Stay length','2 nights','3.5','7'],
+      ['Power / mo (incl. diesel/solar)','$800','$1,800','$3,500'],
+      ['F&B / guest-night','$25','$42','$90']
+    ],
+    note: 'Underwrite boat/4x4 freight, water systems, and a 20-bed property — not a San José floor plan dropped on a peninsula.'
+  }
+};
+
+const SWOT = [
+  {t:'Party / classic backpacker (CR Backpackers archetype)',
+   s:'Density, bar margin, word-of-mouth, low FF&E spec, tour desk on a captive audience.',
+   w:'Wear cycle measured in months, staff churn, neighbor and municipal liquor risk, Gen-Z split between party and “quiet luxury.”',
+   o:'Own the shuttle chain; sell the next town. Breakfast-to-bar bundle.',
+   r:'Platform mix shift, safety incident, one bad rainy season, ICT/municipal crackdown on informal bars.'},
+  {t:'Poshtel / Selina-class / nomad',
+   s:'Higher ADR, longer length of stay, coworking day-passes, corporate retreats.',
+   w:'Capex, AC kWh, design obsolescence, brand-saturated beaches.',
+   o:'Monthly nomad rates in green season. Specialty coffee margin.',
+   r:'Oversupply (short-lets doubled). Strong colón. Copycat openings on the same block.'},
+  {t:'Eco / adventure (Fortuna, Monteverde, Osa)',
+   s:'Tour commission 10–20% on high tickets. Lower AC. Story-driven occupancy.',
+   w:'Weather tails, road cuts, mold, single-product dependence on park access.',
+   o:'Packaged multi-day. Farm-to-table that is actually a farm.',
+   r:'Climate volatility. Park fee / concession changes. Informal guide competition.'},
+  {t:'Low-cost Airbnb private room in a lived-in house',
+   s:'Near-zero incremental opex. Soft regulation historically.',
+   w:'No community, no F&B, host burnout, algorithm dependence.',
+   o:'Medical-travel quiet stays in GAM.',
+   r:'Platform withholding (12.75% flagged), municipal STR rules, HOA bans.'},
+  {t:'Entire-unit micro-apartment STR',
+   s:'Privacy premium vs dorms. Smart-lock labor light.',
+   w:'Turnover cost vs $60 ADR. Zero bar. Cleaning is the payroll.',
+   o:'Cluster several units. Mid-term in green season.',
+   r:'Same tax net as hotels, without the front-desk pricing power.'}
+];
+
+let stackChart, yearChart;
+
+function showTab(id){
+  document.querySelectorAll('.tabpane').forEach(p => p.classList.add('hidden'));
+  document.getElementById('tab-'+id).classList.remove('hidden');
+  document.querySelectorAll('nav button').forEach(b => {
+    b.className = (b.dataset.tab===id?'tab-on':'tab-off') + ' pb-3 whitespace-nowrap';
+  });
+  if(id==='model' || id==='years') recalc();
+}
+
+function fillStatic(){
+  const sel = document.getElementById('region');
+  sel.innerHTML = Object.entries(REGIONS).map(([k,v]) => `<option value="${k}">${v.name}</option>`).join('');
+  document.getElementById('regionGrid').innerHTML = Object.values(REGIONS).map(r => `
+    <article class="kpi rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-line">
+        <h3 class="font-semibold">${r.name}</h3>
+        <p class="text-sm text-slate-400 mt-1">${r.blurb}</p>
+      </div>
+      <div class="p-5">
+        <table class="data w-full text-sm">
+          <thead><tr><th class="text-left">Metric</th><th>Low</th><th>Median</th><th>High</th></tr></thead>
+          <tbody class="text-slate-300">${r.stats.map(s=>`<tr><td class="py-1.5">${s[0]}</td><td>${s[1]}</td><td class="text-white font-medium">${s[2]}</td><td>${s[3]}</td></tr>`).join('')}</tbody>
+        </table>
+        <p class="text-sm text-slate-400 mt-3">${r.note}</p>
+      </div>
+    </article>`).join('');
+  document.getElementById('swotGrid').innerHTML = SWOT.map(s => `
+    <article class="kpi rounded-xl p-5">
+      <h3 class="font-semibold text-mint">${s.t}</h3>
+      <dl class="mt-3 space-y-2 text-sm">
+        <div><dt class="text-slate-500 uppercase text-[11px]">Strengths</dt><dd class="text-slate-300">${s.s}</dd></div>
+        <div><dt class="text-slate-500 uppercase text-[11px]">Weaknesses</dt><dd class="text-slate-300">${s.w}</dd></div>
+        <div><dt class="text-slate-500 uppercase text-[11px]">Opportunities</dt><dd class="text-slate-300">${s.o}</dd></div>
+        <div><dt class="text-slate-500 uppercase text-[11px]">Risks</dt><dd class="text-slate-300">${s.r}</dd></div>
+      </dl>
+    </article>`).join('');
+}
+
+function applyRegion(){
+  const r = REGIONS[document.getElementById('region').value];
+  const map = {dormAdr:r.dormAdr,privAdr:r.privAdr,occ:r.occ,fb:r.fb,laundry:r.laundry,tours:r.tours,utils:r.utils,rent:r.rent,loaded:r.loaded};
+  Object.entries(map).forEach(([k,v]) => document.getElementById(k).value = v);
+  recalc();
+}
+
+function num(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function crTax(entity, ebt){
+  // Simplified: persona física uses 20% blended above small exempt; SME 15% blended; large 30%.
+  // Asociación assumed commercial = 30% unless user is actually nonprofit — we tax as commercial with a note.
+  if(ebt<=0) return 0;
+  if(entity==='pf'){
+    // rough blended on USD books
+    if(ebt < 9000) return 0;
+    if(ebt < 14000) return (ebt-9000)*0.10;
+    if(ebt < 23000) return 500 + (ebt-14000)*0.15;
+    if(ebt < 45000) return 1850 + (ebt-23000)*0.20;
+    return 6250 + (ebt-45000)*0.25;
+  }
+  if(entity==='asoc') return ebt * 0.30; // commercial-in-substance
+  // companies: assume above SME gross gate at hostel scale
+  return ebt * 0.30;
+}
+
+function withholding(entity, afterCit){
+  if(afterCit<=0) return 0;
+  if(entity==='pf' || entity==='asoc') return 0;
+  return afterCit * 0.15;
+}
+
+function compute(withUpsell, occOverride){
+  const days = 365;
+  const dormBeds = num('dormBeds');
+  const privRooms = num('privRooms');
+  const paxPriv = num('paxPriv');
+  const occ = (occOverride ?? num('occ'))/100;
+  const dormAdr = num('dormAdr');
+  const privAdr = num('privAdr');
+  const otaMix = num('otaMix')/100;
+  const otaFee = num('otaFee')/100;
+  const fb = withUpsell ? num('fb') : 0;
+  const fbCogs = num('fbCogs')/100;
+  const laundry = withUpsell ? num('laundry') : 0;
+  const tours = withUpsell ? num('tours') : 0;
+  const rent = num('rent')*12;
+  const utils = num('utils')*12;
+  const labor = num('fte')*num('loaded')*12;
+  const ins = num('ins')*12;
+  const maint = num('maint')*12;
+  const entity = document.getElementById('entity').value;
+
+  const dormNights = dormBeds * days * occ;
+  const privNights = privRooms * days * occ;
+  const guests = dormNights + privNights * paxPriv;
+
+  const roomRev = dormNights*dormAdr + privNights*privAdr;
+  const ota = roomRev * otaMix * otaFee;
+  const fbRev = guests * fb;
+  const laundryRev = guests * laundry;
+  const tourRev = guests * tours;
+  const anc = fbRev + laundryRev + tourRev;
+  const gor = roomRev + anc;
+
+  const cogs = fbRev * fbCogs + laundryRev * 0.25;
+  const patent = gor * 0.002; // municipal proxy
+  const opex = labor + rent + utils + ins + maint + ota + cogs + patent + 2400; // $2.4k ICT/legal/accounting retainer
+  const ebitda = gor - opex;
+  const cit = crTax(entity, ebitda);
+  const afterCit = ebitda - cit;
+  const wht = withholding(entity, afterCit);
+  const owner = afterCit - wht;
+  const iva = (roomRev + fbRev + laundryRev) * 0.13;
+  const bedEq = dormBeds + privRooms*2;
+  return {dormNights,privNights,guests,roomRev,fbRev,laundryRev,tourRev,anc,gor,ota,cogs,labor,rent,utils,ins,maint,patent,opex,ebitda,cit,wht,owner,iva,bedEq,occ};
+}
+
+function breakEvenOcc(){
+  let lo=1, hi=100, ans=100;
+  for(let i=0;i<20;i++){
+    const mid=(lo+hi)/2;
+    const m=compute(document.getElementById('upsellsOn').checked, mid);
+    if(m.ebitda>=0){ ans=mid; hi=mid; } else lo=mid;
+  }
+  return ans;
+}
+
+function recalc(){
+  const on = document.getElementById('upsellsOn').checked;
+  const a = compute(on);
+  const b = compute(false);
+
+  document.getElementById('k-rev').textContent = usd(a.gor);
+  document.getElementById('k-revn').textContent = Math.round(a.guests).toLocaleString() + ' guest-nights';
+  document.getElementById('k-opex').textContent = usd(a.opex);
+  document.getElementById('k-opexn').textContent = 'Labor ' + usd(a.labor);
+  const eEl = document.getElementById('k-ebitda');
+  eEl.textContent = usd(a.ebitda);
+  eEl.className = 'text-2xl font-semibold mt-1 font-mono ' + (a.ebitda>=0?'text-mint':'text-red-400');
+  document.getElementById('k-margin').textContent = 'Margin ' + pct(a.gor? a.ebitda/a.gor : 0);
+  document.getElementById('k-cash').textContent = usd(a.owner);
+  document.getElementById('k-cashn').textContent = 'CIT ' + usd(a.cit) + ' · WHT ' + usd(a.wht);
+  document.getElementById('k-be').textContent = breakEvenOcc().toFixed(1) + '%';
+  document.getElementById('k-revpar').textContent = usd1(a.bedEq? a.gor/(a.bedEq*365) : 0) + ' /night';
+  document.getElementById('k-iva').textContent = usd(a.iva);
+
+  const rows = [
+    ['Room revenue', b.roomRev, a.roomRev],
+    ['F&B', 0, a.fbRev],
+    ['Laundry', 0, a.laundryRev],
+    ['Tour commissions (net)', 0, a.tourRev],
+    ['Gross operating revenue', b.gor, a.gor],
+    ['OTA commissions (rooms only)', b.ota, a.ota],
+    ['F&B + laundry COGS', b.cogs, a.cogs],
+    ['Labor loaded', b.labor, a.labor],
+    ['Rent / debt service', b.rent, a.rent],
+    ['Utilities', b.utils, a.utils],
+    ['Insurance', b.ins, a.ins],
+    ['Maintenance + supplies', b.maint, a.maint],
+    ['Municipal patente proxy', b.patent, a.patent],
+    ['Total cash OpEx', b.opex, a.opex],
+    ['EBITDA', b.ebitda, a.ebitda],
+    ['CR income tax (modeled)', b.cit, a.cit],
+    ['Dividend WHT 15% (if corp)', b.wht, a.wht],
+    ['Owner cash after CR tax', b.owner, a.owner],
+  ];
+  document.getElementById('plBody').innerHTML = rows.map(([n,x,y],i) => {
+    const bold = [4,13,14,17].includes(i);
+    const neg = (v)=> v<0?'text-red-400':'';
+    return `<tr class="${bold?'text-white font-medium':''}"><td class="py-1.5">${n}</td><td class="text-right font-mono ${neg(x)}">${usd(x)}</td><td class="text-right font-mono ${neg(y)}">${usd(y)}</td></tr>`;
+  }).join('');
+
+  const ctx = document.getElementById('stackChart');
+  const data = {
+    labels: ['Dorm','Private','F&B','Tours','Laundry','Labor','Occupancy cost','OTA','COGS','Other'],
+    datasets: [{
+      data: [a.dormNights*num('dormAdr'), a.privNights*num('privAdr'), a.fbRev, a.tourRev, a.laundryRev, -a.labor, -(a.rent+a.utils+a.ins), -a.ota, -a.cogs, -(a.maint+a.patent+2400)],
+      backgroundColor: ['#2dd4a8','#5eead4','#fbbf24','#fb923c','#fde68a','#f87171','#fb7185','#c084fc','#94a3b8','#64748b']
+    }]
+  };
+  if(stackChart){ stackChart.data = data; stackChart.update(); }
+  else stackChart = new Chart(ctx, {type:'bar', data, options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>usd(Math.abs(c.parsed.y))}}},
+    scales:{x:{ticks:{color:'#8aa0ad', maxRotation:40}, grid:{display:false}}, y:{ticks:{color:'#8aa0ad', callback:v=>usd(v)}, grid:{color:'rgba(255,255,255,.05)'}}}
+  }});
+
+  // sensitivity
+  const occs = [-12,-6,0,6,12].map(d => Math.max(20, Math.min(95, num('occ')+d)));
+  const adrs = [-6,-3,0,3,6].map(d => Math.max(8, num('dormAdr')+d));
+  const basePriv = num('privAdr');
+  let html = '<thead><tr><th class="text-left py-2">Occ \\ Dorm ADR</th>'+adrs.map(a=>`<th class="text-right">${usd(a)}</th>`).join('')+'</tr></thead><tbody>';
+  const saveD = num('dormAdr');
+  occs.forEach(o => {
+    html += `<tr><td class="py-1.5 font-medium">${o.toFixed(0)}%</td>`;
+    adrs.forEach(ad => {
+      document.getElementById('dormAdr').value = ad;
+      const m = compute(on, o);
+      const cls = m.ebitda>=0?'text-mint':'text-red-400';
+      html += `<td class="text-right font-mono ${cls}">${usd(m.ebitda)}</td>`;
+    });
+    html += '</tr>';
+  });
+  document.getElementById('dormAdr').value = saveD;
+  document.getElementById('sensTable').innerHTML = html + '</tbody>';
+
+  // 10 year
+  const years = [];
+  let occY = num('occ');
+  const cap = REGIONS[document.getElementById('region').value].occCap;
+  for(let y=1;y<=10;y++){
+    if(y===2) occY = Math.min(cap, occY+4);
+    if(y===3) occY = Math.min(cap, occY+3);
+    const grow = Math.pow(1.03, y-1);
+    const wageG = Math.pow(1.022, y-1);
+    const saved = {
+      dormAdr: num('dormAdr'), privAdr: num('privAdr'),
+      loaded: num('loaded'), utils: num('utils'), rent: num('rent'), maint: num('maint')
+    };
+    document.getElementById('dormAdr').value = (saved.dormAdr*grow).toFixed(2);
+    document.getElementById('privAdr').value = (saved.privAdr*grow).toFixed(2);
+    document.getElementById('loaded').value = (saved.loaded*wageG).toFixed(0);
+    document.getElementById('utils').value = (saved.utils*grow).toFixed(0);
+    document.getElementById('rent').value = (saved.rent*grow).toFixed(0);
+    document.getElementById('maint').value = (saved.maint*grow).toFixed(0);
+    const m = compute(on, occY);
+    years.push({y, occ:occY, ...m});
+    Object.entries(saved).forEach(([k,v]) => document.getElementById(k).value = v);
+  }
+  let yt = '<thead><tr><th class="text-left py-2">Year</th><th class="text-right">Occ</th><th class="text-right">GOR</th><th class="text-right">OpEx</th><th class="text-right">EBITDA</th><th class="text-right">CR tax</th><th class="text-right">Owner cash</th><th class="text-right">Margin</th></tr></thead><tbody>';
+  years.forEach(r => {
+    yt += `<tr><td class="py-1.5">Y${r.y}</td><td class="text-right font-mono">${r.occ.toFixed(0)}%</td><td class="text-right font-mono">${usd(r.gor)}</td><td class="text-right font-mono">${usd(r.opex)}</td><td class="text-right font-mono ${r.ebitda<0?'text-red-400':'text-mint'}">${usd(r.ebitda)}</td><td class="text-right font-mono">${usd(r.cit+r.wht)}</td><td class="text-right font-mono">${usd(r.owner)}</td><td class="text-right font-mono">${pct(r.gor?r.ebitda/r.gor:0)}</td></tr>`;
+  });
+  document.getElementById('yearTable').innerHTML = yt+'</tbody>';
+  const ydata = {
+    labels: years.map(r=>'Y'+r.y),
+    datasets:[
+      {label:'GOR', data:years.map(r=>r.gor), borderColor:'#2dd4a8', backgroundColor:'transparent', tension:.25},
+      {label:'OpEx', data:years.map(r=>r.opex), borderColor:'#f87171', backgroundColor:'transparent', tension:.25},
+      {label:'Owner cash', data:years.map(r=>r.owner), borderColor:'#fbbf24', backgroundColor:'transparent', tension:.25}
+    ]
+  };
+  if(yearChart){ yearChart.data=ydata; yearChart.update(); }
+  else if(document.getElementById('yearChart')){
+    yearChart = new Chart(document.getElementById('yearChart'), {type:'line', data:ydata, options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#cbd5e1'}}},
+      scales:{x:{ticks:{color:'#8aa0ad'}, grid:{display:false}}, y:{ticks:{color:'#8aa0ad', callback:v=>usd(v)}, grid:{color:'rgba(255,255,255,.05)'}}}
+    }});
+  }
+}
+
+fillStatic();
+window.addEventListener('load', recalc);
+</script>
+</body>
+</html>

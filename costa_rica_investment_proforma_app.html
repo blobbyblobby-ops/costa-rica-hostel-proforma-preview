@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Costa Rica Hostel Investment Simulator & Market Analysis</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        cr: {
+                            dark: '#0f172a',
+                            primary: '#059669', // Emerald 600
+                            light: '#d1fae5',
+                            accent: '#38bdf8', // Light Blue
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .tab-active { border-bottom: 2px solid #059669; color: #059669; font-weight: 600; }
+        .tab-inactive { color: #64748b; }
+        .tab-inactive:hover { color: #334155; }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
+
+    <header class="bg-cr-dark text-white shadow-md z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Costa Rica Hospitality Proforma</h1>
+                <p class="text-sm text-slate-400 mt-1">Financial Projections & Market Analysis</p>
+            </div>
+            <div class="hidden sm:block">
+                <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                    Interactive Model Active
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <nav class="bg-white border-b border-slate-200 z-10 flex-none">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex space-x-8" aria-label="Tabs">
+                <button onclick="switchTab('simulator')" id="tab-simulator" class="tab-active whitespace-nowrap py-4 px-1 text-sm font-medium transition-colors">
+                    Financial Simulator
+                </button>
+                <button onclick="switchTab('market')" id="tab-market" class="tab-inactive whitespace-nowrap py-4 px-1 text-sm font-medium transition-colors">
+                    Market Statistics
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto h-full">
+
+            <!-- ========================================== -->
+            <!-- FINANCIAL SIMULATOR SECTION                -->
+            <!-- ========================================== -->
+            <div id="section-simulator" class="block h-full">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+                    
+                    <div class="lg:col-span-4 space-y-6">
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                            <h2 class="text-lg font-semibold mb-4 text-slate-800 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-cr-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                Property Capacity
+                            </h2>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Number of Dorm Beds</label>
+                                    <input type="number" id="inp-dormBeds" value="40" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cr-primary focus:border-transparent" oninput="calculateProforma()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Number of Private Rooms</label>
+                                    <input type="number" id="inp-privateRooms" value="15" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cr-primary focus:border-transparent" oninput="calculateProforma()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Annual Occupancy Rate (%)</label>
+                                    <input type="number" id="inp-occupancy" value="65" min="0" max="100" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cr-primary focus:border-transparent" oninput="calculateProforma()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                            <h2 class="text-lg font-semibold mb-4 text-slate-800 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-cr-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Pricing & Upsells (USD)
+                            </h2>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Dorm Bed Rate (Nightly)</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">$</span>
+                                        <input type="number" id="inp-dormRate" value="18" class="w-full rounded-md border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cr-primary focus:border-transparent" oninput="calculateProforma()">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Private Room Rate (Nightly)</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">$</span>
+                                        <input type="number" id="inp-privateRate" value="85" class="w-full rounded-md border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cr-primary focus:border-transparent" oninput="calculateProforma()">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">F&B Upsell (Per Guest/Day)</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">$</span>
+                                        <input type="number" id="inp-fbUpsell" value="20" class="w-full rounded-md border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cr-primary focus:border-transparent" oninput="calculateProforma()">
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-1">*Assumes 2 pax per private room for F&B calc</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                            <h2 class="text-lg font-semibold mb-4 text-slate-800 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-cr-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                OpEx & Labor
+                            </h2>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Total Staff Count</label>
+                                    <input type="number" id="inp-staffCount" value="8" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cr-primary focus:border-transparent" oninput="calculateProforma()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Avg Monthly Cost Per Staff (Inc. CCSS)</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">$</span>
+                                        <input type="number" id="inp-staffCost" value="1350" class="w-full rounded-md border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cr-primary focus:border-transparent" oninput="calculateProforma()">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Monthly Fixed Overhead (Utilities, Rent, Ins)</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">$</span>
+                                        <input type="number" id="inp-overhead" value="6500" class="w-full rounded-md border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cr-primary focus:border-transparent" oninput="calculateProforma()">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-8 flex flex-col space-y-6 h-full pb-12">
+                        
+                        <!-- KPI Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-t-4 border-t-emerald-500">
+                                <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Gross Annual Rev</p>
+                                <p class="text-3xl font-bold text-slate-800 mt-2" id="out-revenue">$0</p>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-t-4 border-t-red-500">
+                                <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Total Annual OpEx</p>
+                                <p class="text-3xl font-bold text-slate-800 mt-2" id="out-opex">$0</p>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-t-4 border-t-blue-500">
+                                <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Net Pre-Tax Profit</p>
+                                <p class="text-3xl font-bold text-slate-800 mt-2" id="out-profit">$0</p>
+                                <p class="text-sm text-slate-400 mt-1" id="out-margin">Margin: 0%</p>
+                            </div>
+                        </div>
+
+                        <!-- Chart Container -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex-1 relative min-h-[400px]">
+                            <h3 class="text-lg font-semibold text-slate-800 mb-4">Annual Revenue & Expense Breakdown</h3>
+                            <div class="absolute inset-0 pt-16 pb-5 px-5">
+                                <canvas id="proformaChart"></canvas>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- MARKET STATISTICS SECTION                  -->
+            <!-- ========================================== -->
+            <div id="section-market" class="hidden space-y-6 pb-12">
+                
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-slate-800">Costa Rica Regional Analysis</h2>
+                    <p class="text-slate-600 mt-2">Comprehensive statistical breakdown of pricing medians, tails, and operational realities across major tourist hubs.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Region 1 -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-slate-800 text-white p-4">
+                            <h3 class="text-lg font-semibold">San Jose & Liberia (Transit Hubs)</h3>
+                            <p class="text-sm text-slate-300">High volume, 1-2 night stays, minimal seasonality.</p>
+                        </div>
+                        <div class="p-5">
+                            <table class="w-full text-sm text-left text-slate-600 mb-4">
+                                <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                                    <tr><th>Metric</th><th class="px-2 py-1">Low (10%)</th><th class="px-2 py-1 font-bold">Median</th><th class="px-2 py-1">High (90%)</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b"><td class="py-2 font-medium">Dorm Bed</td><td class="px-2 py-2">$12</td><td class="px-2 py-2 font-bold text-slate-800">$15</td><td class="px-2 py-2">$22</td></tr>
+                                    <tr class="border-b"><td class="py-2 font-medium">Private Rm</td><td class="px-2 py-2">$35</td><td class="px-2 py-2 font-bold text-slate-800">$50</td><td class="px-2 py-2">$75</td></tr>
+                                    <tr class="border-b"><td class="py-2 font-medium">Monthly Utils</td><td class="px-2 py-2">$600</td><td class="px-2 py-2 font-bold text-slate-800">$900</td><td class="px-2 py-2">$1,200</td></tr>
+                                    <tr><td class="py-2 font-medium">F&B Upsell</td><td class="px-2 py-2">$5</td><td class="px-2 py-2 font-bold text-slate-800">$12</td><td class="px-2 py-2">$25</td></tr>
+                                </tbody>
+                            </table>
+                            <div class="text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                                <strong>Analysis:</strong> Extremely tight bell curve. Demand is highly predictable as it is tied to airport arrivals/departures. Low utility costs because ceiling fans generally suffice year-round. Profit is volume-driven, not margin-driven.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Region 2 -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-teal-700 text-white p-4">
+                            <h3 class="text-lg font-semibold">Tamarindo & Jaco (Party/Surf Coastal)</h3>
+                            <p class="text-sm text-teal-100">Longer stays, high bar revenue, massive seasonality.</p>
+                        </div>
+                        <div class="p-5">
+                            <table class="w-full text-sm text-left text-slate-600 mb-4">
+                                <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                                    <tr><th>Metric</th><th class="px-2 py-1">Low (10%)</th><th class="px-2 py-1 font-bold">Median</th><th class="px-2 py-1">High (90%)</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b"><td class="py-2 font-medium">Dorm Bed</td><td class="px-2 py-2">$18</td><td class="px-2 py-2 font-bold text-slate-800">$25</td><td class="px-2 py-2">$40</td></tr>
+                                    <tr class="border-b"><td class="py-2 font-medium">Private Rm</td><td class="px-2 py-2">$60</td><td class="px-2 py-2 font-bold text-slate-800">$90</td><td class="px-2 py-2">$150</td></tr>
+                                    <tr class="border-b"><td class="py-2 font-medium">Monthly Utils</td><td class="px-2 py-2">$1,500</td><td class="px-2 py-2 font-bold text-slate-800">$2,500</td><td class="px-2 py-2">$4,000</td></tr>
+                                    <tr><td class="py-2 font-medium">F&B Upsell</td><td class="px-2 py-2">$15</td><td class="px-2 py-2 font-bold text-slate-800">$35</td><td class="px-2 py-2">$60</td></tr>
+                                </tbody>
+                            </table>
+                            <div class="text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                                <strong>Analysis:</strong> Wide statistical distribution. Budget spots exist alongside luxury "poshtels" (e.g., Selina). High variance in expenses due to mandatory 24/7 Air Conditioning. Massive F&B upside due to nightlife/surf culture.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Region 3 -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-emerald-700 text-white p-4">
+                            <h3 class="text-lg font-semibold">Arenal & Monteverde (Eco/Adventure)</h3>
+                            <p class="text-sm text-emerald-100">Tour commission dependent, temperate climate.</p>
+                        </div>
+                        <div class="p-5">
+                            <table class="w-full text-sm text-left text-slate-600 mb-4">
+                                <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                                    <tr><th>Metric</th><th class="px-2 py-1">Low (10%)</th><th class="px-2 py-1 font-bold">Median</th><th class="px-2 py-1">High (90%)</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b"><td class="py-2 font-medium">Dorm Bed</td><td class="px-2 py-2">$15</td><td class="px-2 py-2 font-bold text-slate-800">$20</td><td class="px-2 py-2">$30</td></tr>
+                                    <tr class="border-b"><td class="py-2 font-medium">Private Rm</td><td class="px-2 py-2">$45</td><td class="px-2 py-2 font-bold text-slate-800">$70</td><td class="px-2 py-2">$110</td></tr>
+                                    <tr class="border-b"><td class="py-2 font-medium">Monthly Utils</td><td class="px-2 py-2">$500</td><td class="px-2 py-2 font-bold text-slate-800">$800</td><td class="px-2 py-2">$1,500</td></tr>
+                                    <tr><td class="py-2 font-medium">F&B Upsell</td><td class="px-2 py-2">$10</td><td class="px-2 py-2 font-bold text-slate-800">$20</td><td class="px-2 py-2">$40</td></tr>
+                                </tbody>
+                            </table>
+                            <div class="text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                                <strong>Analysis:</strong> Cooler elevations eliminate AC costs, lowering overhead. Bed rates are average, but total lifetime value of the guest is massive because hostels act as booking agents for ziplining/rafting, taking 15-25% commissions.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Region 4 -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-blue-800 text-white p-4">
+                            <h3 class="text-lg font-semibold">Osa Peninsula (Remote Deep Jungle)</h3>
+                            <p class="text-sm text-blue-100">Captive audience, extreme logistics costs.</p>
+                        </div>
+                        <div class="p-5">
+                            <table class="w-full text-sm text-left text-slate-600 mb-4">
+                                <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                                    <tr><th>Metric</th><th class="px-2 py-1">Low (10%)</th><th class="px-2 py-1 font-bold">Median</th><th class="px-2 py-1">High (90%)</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b"><td class="py-2 font-medium">Dorm Bed</td><td class="px-2 py-2">$20</td><td class="px-2 py-2 font-bold text-slate-800">$35</td><td class="px-2 py-2">$50</td></tr>
+                                    <tr class="border-b"><td class="py-2 font-medium">Private Rm</td><td class="px-2 py-2">$80</td><td class="px-2 py-2 font-bold text-slate-800">$120</td><td class="px-2 py-2">$250</td></tr>
+                                    <tr class="border-b"><td class="py-2 font-medium">Monthly Utils</td><td class="px-2 py-2">$800</td><td class="px-2 py-2 font-bold text-slate-800">$1,500</td><td class="px-2 py-2">$3,000</td></tr>
+                                    <tr><td class="py-2 font-medium">F&B Upsell</td><td class="px-2 py-2">$25</td><td class="px-2 py-2 font-bold text-slate-800">$50</td><td class="px-2 py-2">$90</td></tr>
+                                </tbody>
+                            </table>
+                            <div class="text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                                <strong>Analysis:</strong> Operations are brutally expensive (transporting food, maintaining off-grid solar). However, guests are a "captive audience." With no other restaurants around, 100% of meals are bought in-house, drastically raising per-guest F&B spend.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Currency Formatter (Whole Numbers Only)
+        const formatUSD = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0,
+            minimumFractionDigits: 0
+        });
+
+        // Format Percentage
+        const formatPct = new Intl.NumberFormat('en-US', {
+            style: 'percent',
+            maximumFractionDigits: 1
+        });
+
+        let proformaChartInstance = null;
+
+        function switchTab(tabId) {
+            // Update Tab Styling
+            document.getElementById('tab-simulator').className = tabId === 'simulator' ? 'tab-active whitespace-nowrap py-4 px-1 text-sm font-medium transition-colors' : 'tab-inactive whitespace-nowrap py-4 px-1 text-sm font-medium transition-colors';
+            document.getElementById('tab-market').className = tabId === 'market' ? 'tab-active whitespace-nowrap py-4 px-1 text-sm font-medium transition-colors' : 'tab-inactive whitespace-nowrap py-4 px-1 text-sm font-medium transition-colors';
+            
+            // Toggle Section Visibility
+            document.getElementById('section-simulator').style.display = tabId === 'simulator' ? 'block' : 'none';
+            document.getElementById('section-market').style.display = tabId === 'market' ? 'block' : 'none';
+
+            // Redraw chart if switching back to simulator to prevent resize bugs
+            if(tabId === 'simulator') {
+                calculateProforma();
+            }
+        }
+
+        function calculateProforma() {
+            // 1. Gather Inputs
+            const dormBeds = parseInt(document.getElementById('inp-dormBeds').value) || 0;
+            const privateRooms = parseInt(document.getElementById('inp-privateRooms').value) || 0;
+            const occupancy = (parseInt(document.getElementById('inp-occupancy').value) || 0) / 100;
+            
+            const dormRate = parseInt(document.getElementById('inp-dormRate').value) || 0;
+            const privateRate = parseInt(document.getElementById('inp-privateRate').value) || 0;
+            const fbUpsell = parseInt(document.getElementById('inp-fbUpsell').value) || 0;
+            
+            const staffCount = parseInt(document.getElementById('inp-staffCount').value) || 0;
+            const staffCost = parseInt(document.getElementById('inp-staffCost').value) || 0;
+            const overhead = parseInt(document.getElementById('inp-overhead').value) || 0;
+
+            // 2. Core Math Logic (Annualized)
+            const daysInYear = 365;
+            
+            // Occupied Units
+            const occupiedDormNights = Math.round(dormBeds * daysInYear * occupancy);
+            const occupiedPrivateNights = Math.round(privateRooms * daysInYear * occupancy);
+            
+            // Revenue Streams
+            const annualDormRev = occupiedDormNights * dormRate;
+            const annualPrivateRev = occupiedPrivateNights * privateRate;
+            
+            // F&B Calculation (Assumes 2 pax per private room)
+            const totalGuestsYearly = occupiedDormNights + (occupiedPrivateNights * 2);
+            const annualFbRev = totalGuestsYearly * fbUpsell;
+            
+            const grossRevenue = annualDormRev + annualPrivateRev + annualFbRev;
+
+            // Expenses
+            const annualLaborOpEx = staffCount * staffCost * 12;
+            const annualFixedOpEx = overhead * 12;
+            
+            const totalOpEx = annualLaborOpEx + annualFixedOpEx;
+            
+            // Profit
+            const netProfit = grossRevenue - totalOpEx;
+            const profitMargin = grossRevenue > 0 ? (netProfit / grossRevenue) : 0;
+
+            // 3. Update DOM Outputs
+            document.getElementById('out-revenue').innerText = formatUSD.format(grossRevenue);
+            document.getElementById('out-opex').innerText = formatUSD.format(totalOpEx);
+            
+            const profitEl = document.getElementById('out-profit');
+            profitEl.innerText = formatUSD.format(netProfit);
+            profitEl.className = netProfit >= 0 ? "text-3xl font-bold text-slate-800 mt-2" : "text-3xl font-bold text-red-600 mt-2";
+            
+            document.getElementById('out-margin').innerText = `Margin: ${formatPct.format(profitMargin)}`;
+
+            // 4. Update Chart
+            updateChart(annualDormRev, annualPrivateRev, annualFbRev, annualLaborOpEx, annualFixedOpEx);
+        }
+
+        function updateChart(dormRev, privateRev, fbRev, laborExp, fixedExp) {
+            const ctx = document.getElementById('proformaChart').getContext('2d');
+            
+            const data = {
+                labels: ['Dorm Revenue', 'Private Room Rev', 'F&B Revenue', 'Labor Expense', 'Fixed Overhead'],
+                datasets: [{
+                    label: 'Annual Financials (USD)',
+                    data: [dormRev, privateRev, fbRev, -laborExp, -fixedExp],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.8)', // Emerald (Rev)
+                        'rgba(52, 211, 153, 0.8)', // Lighter Emerald (Rev)
+                        'rgba(110, 231, 183, 0.8)', // Lightest Emerald (Rev)
+                        'rgba(239, 68, 68, 0.8)',   // Red (Exp)
+                        'rgba(248, 113, 113, 0.8)'  // Lighter Red (Exp)
+                    ],
+                    borderColor: [
+                        'rgb(5, 150, 105)',
+                        'rgb(16, 185, 129)',
+                        'rgb(52, 211, 153)',
+                        'rgb(220, 38, 38)',
+                        'rgb(239, 68, 68)'
+                    ],
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            };
+
+            const config = {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += formatUSD.format(Math.abs(context.parsed.y));
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            ticks: {
+                                callback: function(value) {
+                                    return formatUSD.format(value);
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            };
+
+            if (proformaChartInstance) {
+                proformaChartInstance.data = data;
+                proformaChartInstance.update();
+            } else {
+                proformaChartInstance = new Chart(ctx, config);
+            }
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            calculateProforma();
+        };
+    </script>
+</body>
+</html>
